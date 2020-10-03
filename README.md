@@ -1,7 +1,11 @@
-fragilite_num
+Fragilité numérique
 ==============================
 
 MedNum project x Data4Good
+
+# First trail on cities with Panel dashboard
+
+![Search cities and display](./docs/ind_frag_ville.gif "Title")
 
 Project Organization
 ------------
