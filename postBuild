@@ -12,5 +12,5 @@ echo 'backend : Agg' > $HOME/.config/matplotlib/matplotlibrc
 
 
 # Download data
-mkdir -p ./data/geojson
+mkdir -p ./data/external/geojson
 wget "https://public.opendatasoft.com/explore/dataset/contours-iris/download/?format=geojson&timezone=Europe/Berlin&lang=fr" -O ./data/external/geojson/contours-iris.geojson
