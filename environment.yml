@@ -214,6 +214,7 @@ dependencies:
   - pywavelets=1.1.1
   - pyyaml=5.3.1
   - pyzmq=19.0.2
+  - pyarrow=1.0.1
   - qt=5.12.9
   - qtconsole=4.7.7
   - qtpy=1.9.0
