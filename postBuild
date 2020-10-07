@@ -9,3 +9,8 @@ jupyter serverextension enable --sys-prefix panelserverextension
 mkdir $HOME/.config
 mkdir $HOME/.config/matplotlib
 echo 'backend : Agg' > $HOME/.config/matplotlib/matplotlibrc
+
+
+# Download data
+mkdir -p ./data/geojson
+wget https://public.opendatasoft.com/explore/dataset/contours-iris/download/?format=geojson&timezone=Europe/Berlin&lang=fr -P ./data/geojson
