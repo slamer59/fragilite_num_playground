@@ -1,6 +1,6 @@
 Fragilité numérique
 ==============================
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/slamer59/fragilite_num_playground.git/main?urlpath=/panel/ind_frag_num_communes-mybinder)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/slamer59/fragilite_num_playground.git/main?urlpath=/proxy/5006/ind_frag_num_communes-mybinder)
 
 MedNum project x Data4Good
 
