@@ -3,45 +3,37 @@
 # The build-stage image:
 FROM continuumio/miniconda3 AS build
 
+ARG CONDA_DIR=/opt/conda
+
+# Install miniconda
+SHELL ["/bin/bash", "-c"]
+ENV PATH $CONDA_DIR/bin:$PATH
+RUN conda install mamba -c conda-forge
+
 # Install the package as normal:
-COPY environment-prod.yml .
-RUN conda env create -f environment-prod.yml
+COPY environment-prod.yml environment.yml
 
-# Install conda-pack:
-RUN conda install -c conda-forge conda-pack
-
-# Use conda-pack to create a standalone enviornment
-# in /venv:
-RUN conda-pack -n fragil_num -o /tmp/env.tar && \
-  mkdir /venv && cd /venv && tar xf /tmp/env.tar && \
-  rm /tmp/env.tar
-
-# We've put venv in same path it'll be in final image,
-# so now fix up paths:
-RUN /venv/bin/conda-unpack
-
-
-# Runtime image
-FROM python:3.8.5-slim-stretch AS runtime
+RUN mamba  env create -f environment.yml && \
+ conda clean -afy
+# Pull the environment name out of the environment.yml
+RUN echo "source activate $(head -1 environment.yml | cut -d' ' -f2)" > ~/.bashrc
+ENV PATH /opt/conda/envs/$(head -1 environment.yml | cut -d' ' -f2)/bin:$PATH
 
 # Ensure that Python outputs everything that's printed inside
 # the application rather than buffering it.
 ENV PYTHONUNBUFFERED 1
 
-# Copy /venv from the previous stage:
-COPY --from=build /venv /venv
-
-
 # Creation of the workdir
 RUN mkdir /notebooks
+RUN mkdir /data
+COPY ./data/ /data/
+COPY ./notebooks/*.ipynb /notebooks/
 
 WORKDIR /notebooks
-COPY ./notebooks/*.ipynb /
-
 # When image is run, run the code with the environment
 # activated:
-SHELL ["/bin/bash", "-c"]
+EXPOSE 5006
 
-ENTRYPOINT source /venv/bin/activate
-
-RUN python -m panel serve ind_frag_num_communes-mybinder.ipynb --allow-websocket-origin=*
+# forward request and error logs to docker log collector
+RUN ln -sf /dev/stdout panels.log
+CMD conda run -n fragil_num panel serve *.ipynb --address 0.0.0.0 --port 5006 --allow-websocket-origin=* --log-file panels.log
