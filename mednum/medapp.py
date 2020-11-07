@@ -34,7 +34,10 @@ class MedNumApp(param.Parameterized):
     localisation = param.String(
         default="Toulouse", label=""
     )  # default=["Toulouse"], objects=list(ifrag_cont_df_merged.nom_com.unique()), label='', doc="A string")
-    score = param.Range(default=(0, 250), bounds=(0, 250), label="")
+    score = param.Range(
+        default=(0, 250),
+        bounds=(0, 250),
+    )  # , name="Score")
     interfaces_num = param.ListSelector(label="")
     infos_num = param.ListSelector(label="")
 
@@ -63,15 +66,33 @@ class MedNumApp(param.Parameterized):
 
     def __init__(self, **params):
         super(MedNumApp, self).__init__(**params)
-
         self.param.interfaces_num.objects = OPTIONS_INT_NUM
         self.param.infos_num.objects = OPTIONS_X_INFOS
 
         self.param.comp_admin.objects = OPTIONS_X_COMP_ADMIN
         self.param.comp_usage_num.objects = OPTIONS_X_COMP_USAGE
 
-        self.gauge_ind1 = PyGauge(value=80, max_value=100, name="Gauge1")
-        self.gauge_ind2 = PyGauge(value=158, max_value=200, name="Gauge2")
+        indic_w_g_value_1 = {
+            "name": "indic1_1",
+            "indicators": [
+                dict(name="accès", main=True, value=85, max_value=100),
+                dict(name="information", value=118),
+                # dict(name="indic3", value=168),
+                dict(name="Interfaces", value=53),
+            ],
+        }
+
+        indic_w_g_value_2 = {
+            "indicators": [
+                dict(name="Compétences", main=True, value=135, max_value=180),
+                dict(name="indic3_2", value=115),
+                dict(name="indic4", value=155),
+            ]
+        }
+
+        self.indicator_w_gauge_1 = IndicatorsWithGauge(**indic_w_g_value_1)
+        self.indicator_w_gauge_2 = IndicatorsWithGauge(**indic_w_g_value_2)
+        self.indicator_glob_stats = self.glob_stats()
 
     def lat_widgets(self):
         score_panel = pn.Column("# Score", self.param.score)
@@ -113,8 +134,40 @@ class MedNumApp(param.Parameterized):
 
         return ordered_panel
 
+    def link_ctrl_params_to_indic_params(self):
+        try:
+            return self.indicator_w_gauge.view
+        except:
+            return ""
+
+    @pn.depends('score', watch=True)
+    def glob_stats(self):
+        label = "Score Global"
+        score_min, score_max = self.score
+        HTML = """
+        <h1>{loc}</h1>
+        <b>{score_name}</b> | {score_min}->{score_max}<br>
+
+        <b>{pop_name}</b> | {population}
+        """.format(
+            loc=self.localisation,
+            score_name=label,
+            score_min=score_min,
+            score_max=score_max,
+            pop_name="Population",
+            population="Beaucoup !!"
+        )
+        return pn.pane.HTML(HTML)
+
     def top_panel(self):
-        return pn.Row(self.gauge_ind1.view, self.gauge_ind2.view)
+        try:
+            return pn.Row(
+                self.indicator_glob_stats,
+                self.indicator_w_gauge_1.view,
+                self.indicator_w_gauge_2.view,
+            css_classes=["top-custom"], height=120)
+        except:
+            return ""
 
     @param.depends("localisation")  # , interfaces_num)
     def plot(self):
@@ -128,17 +181,18 @@ class MedNumApp(param.Parameterized):
         )
 
     def view(self):
-        return pn.Row(self.lat_widgets(), pn.Column(self.top_panel, self.plot))
+        self.view = pn.Row(
+            self.lat_widgets(),
+            pn.Spacer(width=10),
+            pn.Column(self.top_panel, pn.Spacer(height=80), self.plot),
+        )
 
     def panel(self):
-        # return pn.Row(global_param.lat_widgets(), global_param.plot)
         return self.lat_widgets()
+
 
 cwd = Path(os.getcwd())
 exec_path = cwd.parent
-# css_files = [
-#     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
-# ]
 data_path = Path("../data")
 
 if data_path.exists():
@@ -158,7 +212,7 @@ hard_reset = False
 cache_dir = interim_data
 
 france_geo_path = external_data / "france-geojson-master"
-geojson_path = {geo.stem: geo for geo in france_geo_path.rglob("*.parquet")}
+geojson_path = {geo.stem: geo for geo in france_geo_path.rglob("*.geojson")}
 indice_frag_reformated = interim_data / "Tableau_data.parquet"
 
 regions = geojson_path["regions"]
@@ -168,16 +222,17 @@ cont_iris_reformated = interim_data / "contours-iris.parquet"
 indice_frag = france_geo_path = external_data / "extract_tableau" / "Tableau_data.csv"
 
 cont_iris_df = iris_df(cont_iris)
-dept_df = get_dept_df(regions.with_suffix(".parquet"))
-reg_df = get_regions_df(dept.with_suffix(".parquet"))
+print(regions)
+dept_df = get_dept_df(dept) #.with_suffix('.parquet'))
+reg_df = get_regions_df(regions) #.with_suffix('.parquet'))
 
 # Cartes
-reg_map = gv.Polygons(reg_df, vdims=["nom"])
-dept_map = gv.Polygons(dept_df, vdims=["nom", "code"])
-com_map = gv.Polygons(reg_df, vdims=["nom", "code"])
+reg_map = gv.Polygons(reg_df, vdims=['nom'])
+dept_map = gv.Polygons(dept_df, vdims=['nom','code'])
+com_map = gv.Polygons(reg_df, vdims=['nom','code'])
 
 # Extraction de tableau (Indices)
-ifrag_df = get_indice_frag(indice_frag.with_suffix(".parquet"))
+ifrag_df = get_indice_frag(indice_frag) #.with_suffix('.parquet'))
 ifrag_df_pivot = get_indice_frag_pivot(ifrag_df)
 
 # Merged
@@ -440,10 +495,10 @@ custom_style = Style(
 # gspec
 
 # # Complet
-
+#if __name__ == '__main__':
 indice = "GLOBAL COMPETENCES"
-global_param = MedNumApp(name="Sélection")
+# global_param = MedNumApp(name="Sélection")
 
+# pn.extension(css_files=css_files)  # raw_css=[css], css_files=css_files)
+# global_param.panel().servable()
 
-pn.extension(css_files=css_files)  # raw_css=[css], css_files=css_files)
-pn.Row(global_param.lat_widgets(), global_param.plot).servable()

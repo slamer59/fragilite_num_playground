@@ -24,14 +24,18 @@ def _designer():
                 dict(name="indic1", main=True, value=50, max_value=100),
                 dict(name="indic2", value=150),
                 dict(name="indic3", value=132),
-                dict(name="indic4", value=42)
+                dict(name="indic4", value=42),
             ]
         },
         css_path=css_file,
     )
 
     medapp_reloader = ComponentReloader(
-        component=MedNumApp, parameters={"name": "Sélection"}, css_path=css_file
+        component=MedNumApp,
+        parameters={
+            "name": "Sélection Med",
+        },
+        css_path=css_file,
     )
     medapp_top_reloader = ComponentReloader(
         component=PyGauge,
@@ -41,8 +45,8 @@ def _designer():
 
     components = [
         indicatorwwithgauge_app_reloader,
+        medapp_reloader,
         medapp_top_reloader,
-        # medapp_reloader,
     ]
     # Configure the Designer with you components
     return Designer(components=components)

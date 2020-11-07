@@ -84,3 +84,7 @@ border-radius: 15px;
 .bk-root .bk-btn {
 border-radius: 15px;
 }
+
+h1 {font-size: 18px;}
+table {  border-spacing: 15px;}
+.bk>  .gauge-cls > .gauge-tr > tbody >tr.gauge-td {border: 10px solid #ccc; border-width: 0 0 0px 1px;}

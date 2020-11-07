@@ -9,6 +9,20 @@ from pygal.style import Style
 import os
 
 
+def css2dict(css_str):
+    css_style = {}
+    for style in css_str.replace(";", "").split("\n"):
+        if style:
+            try:
+                k, v = style.split(":")
+                css_style[k.strip()] = v.strip()
+            except Exception as e:
+                print(e)
+                print(style)
+                pass
+    return css_style
+
+
 class TreeViewCheckBox(param.Parameterized):
     # tree_categories = param.Parameter()
     # all_checkbox = param.Boolean()
@@ -189,14 +203,16 @@ class PyGauge(param.Parameterized):
             colors=("#0000ff", "#ff0000"),
         )
     )
+    css_info_h2 = """
+    margin: auto;"""
     size_w = param.Integer(100)
     value_font_size = param.Integer()
-    file_name = ""
 
     def __init__(self, **params):
         super(PyGauge, self).__init__(**params)
         self.set_max()
-        self.value_font_size = 2 * self.size_w
+        self.value_font_size = len(str(self.value)) * self.size_w
+        self.w_name = self.name
 
     @pn.depends("value_font_size", "custom_style", watch=True)
     def set_style(self):
@@ -221,12 +237,14 @@ class PyGauge(param.Parameterized):
         gauge.add("", [vals])
         self.file_name = gauge.render_data_uri()
         self.HTML_GAUGE = """
+        <h2 style="{css_info_h2}">{name}</h2>
         <img src="{filepath}" width="{width}px" />
         
         """.format(
             filepath=self.file_name,
-            name=self.name,
+            name=self.w_name,
             width=self.size_w,
+            css_info_h2=self.css_info_h2,
         )
 
     # @pn.depends('value','max_value',watch=True)
@@ -244,6 +262,20 @@ class IndicatorsWithGauge(PyGauge):  # param.Parameterized):
     )
     show_gauge = False
     other_indic = []
+    css_info_td = """
+        font-family: Source Sans Pro;
+        font-style: normal;
+        font-weight: normal;
+        font-size: 18px;
+        align-items: center;
+        text-transform: capitalize;
+        color: #989898;
+        border-left: 1px solid #E5E5E5;
+        padding: 10px;
+    """
+    css_info_h3 = """
+    margin: auto;
+    """
 
     def __init__(self, **params) -> None:
         super(IndicatorsWithGauge, self).__init__(**params)
@@ -257,39 +289,53 @@ class IndicatorsWithGauge(PyGauge):  # param.Parameterized):
                 self.max_value = ind["max_value"]
                 self.value = ind["value"]
                 self.main_indicators_name = ind["name"]
-        
+
         self.other_indic = []
         for ind in self.indicators:
             if ind["name"] != self.main_indicators_name:
                 self.other_indic.append(ind)
+        try:
+            c2d= css2dict(self.css_info_td )
+            font_h = int(c2d['font-size'].replace('px',''))
+            pad = int(c2d['padding'].replace('px',''))
+        except:
+            font_h = 18
+            pad = 10
+            pass
+        self.size_w = ((font_h*2)+(pad*2))*len(self.indicators)
 
     def view(self):
-        super(IndicatorsWithGauge, self).create_gauge()
+        self.w_name = self.main_indicators_name
+        self.create_gauge()
         rowspan = len(self.indicators)
         HTML = """
-        <table border="1" style="width:100%">
-            <tr>
-                <td rowspan={rowspan}>{gauge}</td>
+        <table class="gauge-cls" style="border-spacing: 1em; width:100%">
+            <tr class="gauge-tr">
+                <td class="gauge-td" rowspan={rowspan} style="{style}">{gauge}</td>
         """.format(
-            rowspan=rowspan,
-            gauge=self.HTML_GAUGE,
+            rowspan=rowspan, gauge=self.HTML_GAUGE, style=self.css_info_td
         )
 
         HTML_ROWS = [
             """
-            <td>
-            <h3>{title}</h3>
+            <td class="gauge-td" style="{style}">
+            <h3 style="{style_h3}">{title}</h3>
                 {value}
             </td>
         """.format(
-                title=row["name"], value=row["value"]
+                title=row["name"],
+                value=row["value"],
+                style=self.css_info_td,
+                style_h3=self.css_info_h3,
             )
             for row in self.other_indic
         ]
 
         HTML = HTML + "</tr>\n<tr>\n".join(HTML_ROWS) + "\n<tr>\n</table>"
 
-        return pn.pane.HTML(HTML)
+        return pn.pane.HTML(
+            HTML, css_classes=["indicators"]
+        )
 
 
 # from panel.template.theme import Theme

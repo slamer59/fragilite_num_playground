@@ -118,3 +118,17 @@ def cache_pandas_result(cache_dir, hard_reset: bool, geoformat=False):
             return result
         return cache_function
     return build_caching_function
+
+
+def css2dict(css_str):
+    css_style = {}
+    for style in css_str.replace(';','').split('\n'):
+        if style:
+            try:
+                k,v = style.split(':')
+                css_style[k]=v
+            except Exception as e:
+                print(e)
+                print(style)
+                pass
+    return css_style
