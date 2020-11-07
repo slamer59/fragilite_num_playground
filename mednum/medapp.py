@@ -139,12 +139,13 @@ exec_path = cwd.parent
 # css_files = [
 #     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
 # ]
-if exec_path == "medapp":
-    data_path = Path("../data")
-    medcss_file = cwd / "css" / "medapp.css"
+data_path = Path("../data")
+
+if data_path.exists():
+    medcss_file = data_path.parent / "mednum" / "css" / "medapp.css"
 else:
     data_path = Path("./data")
-    medcss_file = cwd / "mednum" / "css" / "medapp.css"
+    medcss_file = data_path.parent / "mednum" / "css" / "medapp.css"
 
 css_files = [medcss_file]
 external_data = data_path / "external/"

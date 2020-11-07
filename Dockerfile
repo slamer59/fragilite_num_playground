@@ -35,5 +35,5 @@ WORKDIR /notebooks
 EXPOSE 5006
 
 # forward request and error logs to docker log collector
-RUN ln -sf /dev/stdout panels.log
+# RUN ln -sf /dev/stdout panels.log
 CMD conda run -n fragil_num panel serve *.ipynb --address 0.0.0.0 --port 5006 --allow-websocket-origin=* --log-file panels.log
