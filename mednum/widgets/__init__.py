@@ -1,6 +1,7 @@
 import param
 import panel as pn
 import uuid
+from param import Path
 
 import pygal
 from tempfile import NamedTemporaryFile
@@ -194,15 +195,13 @@ class PyGauge(param.Parameterized):
 
     def __init__(self, **params):
         super(PyGauge, self).__init__(**params)
-
         self.set_max()
-        self.file_name = str(uuid.uuid1()) + ".svg"
         self.value_font_size = 2 * self.size_w
-        
-    @pn.depends("value_font_size", watch=True)
+
+    @pn.depends("value_font_size", "custom_style", watch=True)
     def set_style(self):
-        # self.size_w_gauge = 2 * self.size_w
         self.custom_style["value_font_size"] = self.value_font_size
+        self.param["custom_style"].default = self.custom_style
 
     @pn.depends("max_value", watch=True)
     def set_max(self):
@@ -220,17 +219,83 @@ class PyGauge(param.Parameterized):
         gauge.value_formatter = percent_formatter
         vals = {"value": self.value, "max_value": self.max_value}
         gauge.add("", [vals])
-        try:
-            os.remove(self.file_name)
-        except OSError:
-            pass
-        f = NamedTemporaryFile()
-        self.file_name = f.name + ".svg"  # str(uuid.uuid1()) + '.svg'
-        gauge.render_to_file(self.file_name)
+        self.file_name = gauge.render_data_uri()
+        self.HTML_GAUGE = """
+        <img src="{filepath}" width="{width}px" />
+        
+        """.format(
+            filepath=self.file_name,
+            name=self.name,
+            width=self.size_w,
+        )
 
+    # @pn.depends('value','max_value',watch=True)
     def view(self):
         self.create_gauge()
-        return pn.Column(
-            pn.pane.HTML("<h2>" + self.name + "</h2>"),
-            pn.pane.SVG(self.file_name, width=self.size_w),
+        return pn.pane.HTML(self.HTML_GAUGE)
+
+
+class IndicatorsWithGauge(PyGauge):  # param.Parameterized):
+    indicators = param.List(
+        [
+            dict(name="indic2", main=True, value=50, max_value=100),
+            dict(name="indic2", value=150),
+        ]
+    )
+    show_gauge = False
+    other_indic = []
+
+    def __init__(self, **params) -> None:
+        super(IndicatorsWithGauge, self).__init__(**params)
+        self.set_indicators()
+
+    @pn.depends("indicators", watch=True)
+    def set_indicators(self):
+        for ind in self.indicators:
+            if "main" in ind:
+                self.show_gauge = True
+                self.max_value = ind["max_value"]
+                self.value = ind["value"]
+                self.main_indicators_name = ind["name"]
+        
+        self.other_indic = []
+        for ind in self.indicators:
+            if ind["name"] != self.main_indicators_name:
+                self.other_indic.append(ind)
+
+    def view(self):
+        super(IndicatorsWithGauge, self).create_gauge()
+        rowspan = len(self.indicators)
+        HTML = """
+        <table border="1" style="width:100%">
+            <tr>
+                <td rowspan={rowspan}>{gauge}</td>
+        """.format(
+            rowspan=rowspan,
+            gauge=self.HTML_GAUGE,
         )
+
+        HTML_ROWS = [
+            """
+            <td>
+            <h3>{title}</h3>
+                {value}
+            </td>
+        """.format(
+                title=row["name"], value=row["value"]
+            )
+            for row in self.other_indic
+        ]
+
+        HTML = HTML + "</tr>\n<tr>\n".join(HTML_ROWS) + "\n<tr>\n</table>"
+
+        return pn.pane.HTML(HTML)
+
+
+# from panel.template.theme import Theme
+
+# class TopPanel(Theme):
+#     css = param.Filename('./css/medapp.css')
+#     _template = pn.template.Template
+
+# class TopPanel(param.Parameterized):
